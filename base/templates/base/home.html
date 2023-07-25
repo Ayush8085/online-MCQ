@@ -1,0 +1,45 @@
+{% extends 'index.html' %}
+{% load static %}
+{% block content %}
+
+<h1>Quiz List</h1>
+  
+  <!-- Modal -->
+  <div class="modal fade" id="quizStartModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="exampleModalLabel">Start quiz?</h1>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="modal-body-confirm">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Go back</button>
+          <button type="button" class="btn btn-primary" id="start-btn">Sure</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<div class="container my-3">
+    {% for quiz in quizes %}
+
+    <button
+        class="btn btn-link modal-btn"
+        data-pk="{{quiz.id}}"
+        data-quiz="{{quiz.name}}"
+        data-questions="{{quiz.number_of_questions}}"
+        data-time="{{quiz.time}}"
+        data-bs-toggle="modal" 
+        data-bs-target="#quizStartModal">
+        {{quiz.name}}
+    </button>
+
+
+    {% endfor %}
+</div>
+
+<script src="{% static 'js/main.js' %}"></script>
+
+{% endblock content %}
