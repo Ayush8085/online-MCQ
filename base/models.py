@@ -1,10 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import User
-# from django.conf import settings
-# User = settings.AUTH_USER_MODEL
+from loginsys.models import Teacher
 
 class Quiz(models.Model):
     name = models.CharField(max_length=120)
+    teacher = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True)
     topic = models.CharField(max_length=120)
     number_of_questions = models.IntegerField()
     time = models.IntegerField(help_text="Duration of quiz in minutes")

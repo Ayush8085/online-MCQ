@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from .models import Quiz, Question, Answer, Result
 from loginsys.models import Teacher
 from django.http import JsonResponse
-from .forms import QuestionForm, AnswerForm
+from .forms import QuestionForm, QuizForm, AnswerFormSet
 
 def homePage(request):
     quizes = Quiz.objects.all()
@@ -44,16 +44,6 @@ def quiz(request, pk):
     context = {"quiz": quiz}
     return render(request, "base/quiz.html", context)
 
-@login_required(login_url='login')
-def resultPage(request):
-    user = request.user
-    results = Result.objects.filter(user=user)
-    result = results.order_by('-created').first()
-    print("Final result", result)
-
-    context = {"result": result}
-    return render(request, "base/result.html", context)
-
 
 def quizData(request, pk):
     quiz = Quiz.objects.get(id=pk)
@@ -78,59 +68,61 @@ def createQuiz(request):
     except:
         return redirect('home')
 
+    quiz_form = QuizForm()
+
     if request.method == 'POST':
-        name = request.POST.get('quiz-name')
-        topic = request.POST.get('quiz-topic')
-        total_questions = request.POST.get('quiz-total_questions')
-        time = request.POST.get('quiz-time')
+        quiz_form = QuizForm(request.POST)
 
-        Quiz.objects.create(
-            name = name,
-            topic = topic,
-            number_of_questions = total_questions,
-            time = time
-        )
+        if quiz_form.is_valid():
+            form = quiz_form.save(commit=False)
+            form.teacher = teacher
+            form.save()
+            return redirect('questions')
 
-        return redirect('question')
-
-    context = {}
+    context = {'quiz_form': quiz_form}
     return render(request, 'base/create-quiz.html', context)
 
 @login_required(login_url='login')
-def question(request):
+def createQuestions(request):
 
     try:
         teacher = Teacher.objects.get(user=request.user)
     except:
         return redirect('home')
+    
+    question_form = QuestionForm()
+    answer_formset = AnswerFormSet(instance=Question())
+    
+    quiz = teacher.quiz_set.all().order_by('-created').first()
 
-    form = QuestionForm()
+    number_of_questions = quiz.number_of_questions
 
     if request.method == 'POST':
-        form = QuestionForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('answer')
 
-    context = {'form': form}
-    return render(request, 'base/question.html', context)
+        question_form = QuestionForm(request.POST)
+        answer_formset = AnswerFormSet(request.POST, instance=Question())
+        
+        if question_form.is_valid() and answer_formset.is_valid():
+          question = question_form.save(commit=False)
+          question.quiz = quiz
+          question.save()
+
+          answer_formset.instance = question
+          answer_formset.save()
+          
+          return redirect('home')
+
+    context = {'question_form': question_form, 'answer_formset': answer_formset, 'number_of_questions': range(1, number_of_questions+1)}
+    return render(request, 'base/questions.html', context)
+
 
 @login_required(login_url='login')
-def answer(request):
+def resultPage(request):
+    user = request.user
+    results = Result.objects.filter(user=user)
+    result = results.order_by('-created').first()
+    print("Final result", result)
 
-    try:
-        teacher = Teacher.objects.get(user=request.user)
-    except:
-        return redirect('home')
-
-    form = AnswerForm()
-
-    if request.method == 'POST':
-        form = AnswerForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('answer')
-
-    context = {'form': form}
-    return render(request, 'base/answers.html', context)
+    context = {"result": result}
+    return render(request, "base/result.html", context)
 
